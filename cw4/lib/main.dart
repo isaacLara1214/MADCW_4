@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,6 +50,27 @@ class _PlanManagerScreenState extends State<PlanManagerScreen> {
     });
   }
 
+  void _toggleCompletion(int index) {
+    setState(() {
+      _plans[index].isCompleted = !_plans[index].isCompleted;
+    });
+  }
+
+  void _editPlan(
+      int index, String newName, String newDescription, DateTime newDate) {
+    setState(() {
+      _plans[index].name = newName;
+      _plans[index].description = newDescription;
+      _plans[index].date = newDate;
+    });
+  }
+
+  void _deletePlan(int index) {
+    setState(() {
+      _plans.removeAt(index);
+    });
+  }
+
   void _showAddPlanDialog() {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController descriptionController = TextEditingController();
@@ -79,7 +101,9 @@ class _PlanManagerScreenState extends State<PlanManagerScreen> {
                     lastDate: DateTime(2100),
                   );
                   if (pickedDate != null) {
-                    selectedDate = pickedDate;
+                    setState(() {
+                      selectedDate = pickedDate;
+                    });
                   }
                 },
                 child: const Text('Select Date'),
@@ -113,21 +137,51 @@ class _PlanManagerScreenState extends State<PlanManagerScreen> {
       appBar: AppBar(
         title: const Text('Plan Manager'),
       ),
-      body: Center(
-        child: _plans.isEmpty
-            ? const Text('No plans yet!')
-            : ListView.builder(
-                itemCount: _plans.length,
-                itemBuilder: (context, index) {
-                  final plan = _plans[index];
-                  return ListTile(
-                    title: Text(plan.name),
-                    subtitle: Text(plan.description),
-                    trailing: Text('${plan.date.toLocal()}'.split(' ')[0]),
-                  );
-                },
-              ),
-      ),
+      body: _plans.isEmpty
+          ? const Center(child: Text('No plans yet!'))
+          : ListView.builder(
+              itemCount: _plans.length,
+              itemBuilder: (context, index) {
+                final plan = _plans[index];
+                return Dismissible(
+                  key: Key(plan.name),
+                  onDismissed: (direction) {
+                    _deletePlan(index);
+                  },
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  child: Card(
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    child: ListTile(
+                      title: Text(
+                        plan.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          decoration: plan.isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      subtitle: Text(plan.description),
+                      trailing:
+                          Text(DateFormat('yyyy-MM-dd').format(plan.date)),
+                      onLongPress: () {
+                        _editPlan(index, 'Updated Name', 'Updated Description',
+                            plan.date);
+                      },
+                      onTap: () {
+                        _toggleCompletion(index);
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddPlanDialog,
         child: const Icon(Icons.add),
