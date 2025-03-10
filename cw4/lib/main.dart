@@ -131,6 +131,68 @@ class _PlanManagerScreenState extends State<PlanManagerScreen> {
     );
   }
 
+  void _showEditPlanDialog(int index) {
+    final TextEditingController nameController =
+        TextEditingController(text: _plans[index].name);
+    final TextEditingController descriptionController =
+        TextEditingController(text: _plans[index].description);
+    DateTime selectedDate = _plans[index].date;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Plan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Plan Name'),
+              ),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      selectedDate = pickedDate;
+                    });
+                  }
+                },
+                child: const Text('Select Date'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _editPlan(index, nameController.text,
+                    descriptionController.text, selectedDate);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,40 +205,50 @@ class _PlanManagerScreenState extends State<PlanManagerScreen> {
               itemCount: _plans.length,
               itemBuilder: (context, index) {
                 final plan = _plans[index];
-                return Dismissible(
-                  key: Key(plan.name),
-                  onDismissed: (direction) {
-                    _deletePlan(index);
-                  },
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  child: Card(
-                    margin:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    child: ListTile(
-                      title: Text(
-                        plan.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          decoration: plan.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                      ),
-                      subtitle: Text(plan.description),
-                      trailing:
-                          Text(DateFormat('yyyy-MM-dd').format(plan.date)),
-                      onLongPress: () {
-                        _editPlan(index, 'Updated Name', 'Updated Description',
-                            plan.date);
-                      },
-                      onTap: () {
+                return GestureDetector(
+                  onDoubleTap: () => _deletePlan(index),
+                  onLongPress: () => _showEditPlanDialog(index),
+                  child: Dismissible(
+                    key: Key(plan.name),
+                    onDismissed: (direction) {
+                      if (direction == DismissDirection.startToEnd) {
                         _toggleCompletion(index);
-                      },
+                      } else {
+                        _deletePlan(index);
+                      }
+                    },
+                    background: Container(
+                      color: Colors.green,
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: const Icon(Icons.check, color: Colors.white),
+                    ),
+                    secondaryBackground: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 16),
+                      color:
+                          plan.isCompleted ? Colors.green[100] : Colors.white,
+                      child: ListTile(
+                        title: Text(
+                          plan.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            decoration: plan.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                        subtitle: Text(plan.description),
+                        trailing:
+                            Text(DateFormat('yyyy-MM-dd').format(plan.date)),
+                        onTap: () => _toggleCompletion(index),
+                      ),
                     ),
                   ),
                 );
